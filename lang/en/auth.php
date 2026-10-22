@@ -11,6 +11,7 @@ return [
     'continue-with-credentials' => 'Enter your username or email and password to sign in',
 
     'brand' => [
+        'name' => 'Hector Hosting',
         'tagline' => 'Your hosting, managed from one secure place.',
     ],
 

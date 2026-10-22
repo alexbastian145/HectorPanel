@@ -1,9 +1,9 @@
-import { useStoreState } from 'easy-peasy';
+import { useTranslation } from 'react-i18next';
 import classNames from 'classnames';
-import { ApplicationStore } from '@/state';
 
 export default function AuthLogo({ className }: { className?: string }) {
-    const name = useStoreState((state: ApplicationStore) => state.settings.data!.name);
+    const { t } = useTranslation('auth');
+    const name = t('brand.name');
 
     return (
         <div className={classNames('flex items-center gap-3', className)}>
