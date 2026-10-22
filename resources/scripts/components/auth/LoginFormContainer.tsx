@@ -1,44 +1,62 @@
 import React, { forwardRef } from 'react';
 import { Form } from 'formik';
-import FlashMessageRender from '@/components/FlashMessageRender';
-import Card from '@/reviactyl/ui/Card';
-import Title from '@/reviactyl/ui/Title';
-import { LogoContainer } from '@/reviactyl/ui/LogoContainer';
-import { ApplicationStore } from '@/state';
+import { useTranslation } from 'react-i18next';
 import { useStoreState } from 'easy-peasy';
+import FlashMessageRender from '@/components/FlashMessageRender';
 import Footer from '@/reviactyl/ui/Footer';
+import { ApplicationStore } from '@/state';
 import { ExtensionSlot } from '@/extensions/ExtensionSlot';
 import NavbarLanguageSwitcher from '@/reviactyl/ui/NavbarLanguageSwitcher';
+import AuthLogo from '@/components/auth/split/AuthLogo';
+import FloatingPaths from '@/components/auth/split/FloatingPaths';
 
 type Props = React.DetailedHTMLProps<React.FormHTMLAttributes<HTMLFormElement>, HTMLFormElement> & {
     title?: string;
+    subtitle?: string;
 };
 
-export default forwardRef<HTMLFormElement, Props>(({ title, ...props }, ref) => {
-    const logo = useStoreState((state: ApplicationStore) => state.settings.data!.logo);
+export default forwardRef<HTMLFormElement, Props>(({ title, subtitle, ...props }, ref) => {
+    const { t } = useTranslation('auth');
     const name = useStoreState((state: ApplicationStore) => state.settings.data!.name);
+
     return (
-        <div className='mx-auto my-auto'>
-            <ExtensionSlot name={'auth:form:above'} />
-            <Form {...props} ref={ref}>
-                <div className='w-screen max-w-112.5 p-5'>
-                    <FlashMessageRender className='mb-2' />
-                    <ExtensionSlot name={'auth:card:before'} />
-                    <div className='mb-3 flex justify-end'>
-                        <NavbarLanguageSwitcher />
-                    </div>
-                    <LogoContainer>
-                        <img src={logo} alt={name} className='h-12' />
-                    </LogoContainer>
-                    <Card>
-                        {title && <Title className='text-3xl text-center pb-3'>{title}</Title>}
-                        {props.children}
-                    </Card>
-                    <ExtensionSlot name={'auth:form:after'} />
+        <main className='relative min-h-screen w-full overflow-hidden bg-gray-950 text-gray-200 lg:grid lg:grid-cols-2'>
+            <section className='relative hidden h-full flex-col border-r border-gray-800 bg-gray-900/40 p-10 lg:flex'>
+                <div className='absolute inset-0 bg-linear-to-b from-transparent via-transparent to-gray-950' />
+                <AuthLogo className='relative z-10 mr-auto' />
+                <div className='z-10 mt-auto'>
+                    <blockquote className='max-w-lg space-y-2'>
+                        <p className='text-xl leading-relaxed text-gray-100'>{t('brand.tagline')}</p>
+                        <footer className='font-mono text-sm font-semibold text-gray-400'>{name}</footer>
+                    </blockquote>
                 </div>
-            </Form>
-            <ExtensionSlot name={'auth:form:below'} />
-            <Footer />
-        </div>
+                <FloatingPaths />
+            </section>
+
+            <section className='relative flex min-h-screen flex-col justify-center px-6 py-16 lg:px-10'>
+                <div className='absolute top-5 right-5'>
+                    <NavbarLanguageSwitcher />
+                </div>
+
+                <ExtensionSlot name={'auth:form:above'} />
+                <Form {...props} ref={ref}>
+                    <div className='mx-auto w-full max-w-sm space-y-4'>
+                        <AuthLogo className='lg:hidden' />
+                        {(title || subtitle) && (
+                            <div className='flex flex-col space-y-1'>
+                                {title && <h1 className='text-2xl font-bold tracking-wide text-gray-50'>{title}</h1>}
+                                {subtitle && <p className='text-base text-gray-400'>{subtitle}</p>}
+                            </div>
+                        )}
+                        <FlashMessageRender />
+                        <ExtensionSlot name={'auth:card:before'} />
+                        {props.children}
+                        <ExtensionSlot name={'auth:form:after'} />
+                    </div>
+                </Form>
+                <ExtensionSlot name={'auth:form:below'} />
+                <Footer />
+            </section>
+        </main>
     );
 });

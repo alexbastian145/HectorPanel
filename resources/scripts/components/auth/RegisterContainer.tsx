@@ -125,7 +125,7 @@ const RegisterContainer = () => {
             })}
         >
             {({ isSubmitting, setSubmitting, submitForm }) => (
-                <LoginFormContainer title={'Create Account'} className='flex w-full'>
+                <LoginFormContainer title={t('register.create-account')} subtitle={t('register.subtitle')}>
                     <div className='grid grid-cols-2 gap-4'>
                         <Field
                             label={t('register.namefirst-label')}
@@ -221,7 +221,7 @@ const RegisterContainer = () => {
                             to={'/auth/login'}
                             className='text-sm tracking-wide text-reviactyl/80 no-underline hover:text-reviactyl/50'
                         >
-                            Already have an account? Login
+                            {t('register.have-account')}
                         </Link>
                     </div>
                 </LoginFormContainer>

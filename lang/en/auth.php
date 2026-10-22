@@ -5,7 +5,14 @@ return [
     'password-required' => 'Please enter your account password.',
     'email-required' => 'A valid email address must be provided to continue.',
 
-    'login-title' => 'Login to Continue',
+    'login-title' => 'Sign In or Join Now!',
+    'login-subtitle' => 'Sign in or create your account.',
+    'join-now' => 'Join Now',
+    'continue-with-credentials' => 'Enter your username or email and password to sign in',
+
+    'brand' => [
+        'tagline' => 'Your hosting, managed from one secure place.',
+    ],
 
     'username-label' => 'Username or Email',
     'password-label' => 'Password',
@@ -72,6 +79,8 @@ return [
         'create-link' => 'Don\'t have an account? Create one',
         'create-account' => 'Create Account',
         'no-account' => 'Don\'t have an account?',
+        'subtitle' => 'Create your account to get started.',
+        'have-account' => 'Already have an account? Login',
     ],
 
     'failed' => 'No account matching those credentials could be found.',

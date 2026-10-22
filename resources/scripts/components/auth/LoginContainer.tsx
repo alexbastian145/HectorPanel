@@ -17,6 +17,7 @@ import Spinner from '@/reviactyl/elements/Spinner';
 import { KeyIcon, UserIcon, EyeIcon, EyeOffIcon } from '@heroicons/react/solid';
 import { useTranslation } from 'react-i18next';
 import OAuthButtons from '@/components/auth/OAuthButtons';
+import AuthDivider from '@/components/auth/split/AuthDivider';
 
 interface Values {
     username: string;
@@ -175,7 +176,21 @@ function LoginContainer() {
             })}
         >
             {({ isSubmitting, setSubmitting, values }) => (
-                <LoginFormContainer title={t('login-title')} className='flex w-full'>
+                <LoginFormContainer title={t('login-title')} subtitle={t('login-subtitle')}>
+                    {registrationEnabled && (
+                        <>
+                            <Button
+                                className={primaryButtonClass}
+                                type={'button'}
+                                disabled={isSubmitting}
+                                onClick={() => navigate('/auth/register')}
+                            >
+                                {t('join-now')}
+                            </Button>
+                            <AuthDivider>{t('social.or')}</AuthDivider>
+                        </>
+                    )}
+                    <p className='text-start text-xs text-gray-400'>{t('continue-with-credentials')}</p>
                     <Field
                         icon={UserIcon}
                         type={'text'}
@@ -203,7 +218,7 @@ function LoginContainer() {
                             </button>
                         </div>
                     </div>
-                    <div className='mt-6'>
+                    <div className='mt-4'>
                         <Button className={primaryButtonClass} type={'submit'} disabled={isSubmitting}>
                             {t('login-button')}
                         </Button>
@@ -264,14 +279,6 @@ function LoginContainer() {
                         >
                             {t('forgot-password.label')}
                         </Link>
-                        {registrationEnabled && (
-                            <Link
-                                to={'/auth/register'}
-                                className='text-xs tracking-wide text-gray-400 no-underline hover:text-gray-300'
-                            >
-                                {t('register.create-link')}
-                            </Link>
-                        )}
                     </div>
                 </LoginFormContainer>
             )}
