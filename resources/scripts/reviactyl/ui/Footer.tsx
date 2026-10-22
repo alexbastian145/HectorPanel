@@ -9,15 +9,15 @@ export default () => {
             <div className='text-center text-xs text-muted'>
                 <a
                     rel={'noopener nofollow noreferrer'}
-                    href={'https://reviactyl.app'}
+                    href={'https://hectorhosting.com'}
                     target={'_blank'}
                     className='text-muted no-underline hover:text-gray-300'
                 >
-                    Reviactyl&trade;
+                    Hector Hosting
                 </a>
                 &nbsp;&copy; {new Date().getFullYear()}
             </div>
-            {customCopyright ? (
+            {customCopyright && copyright ? (
                 <div className='text-center text-xs text-muted'>
                     <Md2React markdown={copyright} />
                 </div>

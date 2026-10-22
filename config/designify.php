@@ -43,8 +43,8 @@ return [
     'allocationBlur' => true,
     'fontFamily' => 'Poppins',
 
-    'customCopyright' => true,
-    'copyright' => 'Designed with [Designify](https://reviactyl.app/designify)',
+    'customCopyright' => false,
+    'copyright' => '',
 
     'isUnderMaintenance' => false,
     'maintenance' => 'We are currently under maintenance. Kindly check back later!',
