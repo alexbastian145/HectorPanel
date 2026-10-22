@@ -1,0 +1,172 @@
+<?php
+
+namespace App\Filament\Resources\Api;
+
+use App\Filament\AdminAccess;
+use App\Filament\Resources\Api\Pages\CreateApiKey;
+use App\Filament\Resources\Api\Pages\ListApiKeys;
+use App\Models\ApiKey;
+use App\Services\Acl\Api\AdminAcl;
+use Filament\Actions\Action;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\ToggleButtons;
+use Filament\Panel;
+use Filament\Resources\Resource;
+use Filament\Schemas\Components\Fieldset;
+use Filament\Schemas\Schema;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
+use Illuminate\Auth\Access\Response;
+use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+
+class ApiKeyResource extends Resource
+{
+    protected static ?string $model = ApiKey::class;
+
+    /**
+     * Application API keys carry their own access list that is independent of admin
+     * roles, so managing them is reserved for root administrators.
+     */
+    public static function getAuthorizationResponse(string|\UnitEnum $action, ?Model $record = null): Response
+    {
+        return AdminAccess::isRoot() ? Response::allow() : Response::deny();
+    }
+
+    protected static string|\BackedEnum|null $navigationIcon = 'tabler-key';
+
+    protected static string|\BackedEnum|null $activeNavigationIcon = 'tabler-key-filled';
+
+    public static function getNavigationLabel(): string
+    {
+        return trans('admin/navigation.administration.api');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return trans('admin/api.title');
+    }
+
+    public static function getSlug(?Panel $panel = null): string
+    {
+        return 'api';
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        $count = ApiKey::where('key_type', ApiKey::TYPE_APPLICATION)->count();
+
+        return $count > 0 ? (string) $count : null;
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->where('key_type', ApiKey::TYPE_APPLICATION);
+    }
+
+    public static function form(Schema $schema): Schema
+    {
+        return $schema->components([
+            Fieldset::make('permissions')
+                ->label(trans('admin/api.permissions'))
+                ->columnSpanFull()
+                ->schema(
+                    collect(AdminAcl::getResourceList())->map(
+                        fn (string $resource) => ToggleButtons::make(AdminAcl::COLUMN_IDENTIFIER.$resource)
+                            ->label(str($resource)->replace('_', ' ')->title())
+                            ->inline()
+                            ->options([
+                                AdminAcl::NONE => trans('admin/api.none'),
+                                AdminAcl::READ => trans('admin/api.read-only'),
+                                AdminAcl::READ | AdminAcl::WRITE => trans('admin/api.read-write'),
+                            ])
+                            ->icons([
+                                AdminAcl::NONE => 'tabler-lock-access-off',
+                                AdminAcl::READ => 'tabler-scan-eye',
+                                AdminAcl::READ | AdminAcl::WRITE => 'tabler-grid-scan',
+                            ])
+                            ->colors([
+                                AdminAcl::NONE => 'success',
+                                AdminAcl::READ => 'warning',
+                                AdminAcl::READ | AdminAcl::WRITE => 'danger',
+                            ])
+                            ->required()
+                            ->default(AdminAcl::NONE)
+                    )->all()
+                ),
+
+            Textarea::make('memo')
+                ->label(trans('admin/api.description'))
+                ->required()
+                ->columnSpanFull(),
+        ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                TextColumn::make('key')
+                    ->label(trans('admin/api.key'))
+                    ->state(function (ApiKey $key): string {
+                        try {
+                            $token = decrypt($key->token);
+
+                            if ($key->user_id === auth()->id()) {
+                                return $key->identifier.$token;
+                            }
+
+                            return $key->identifier
+                                .'<span style="filter: blur(5px); user-select: none;">'
+                                .e($token)
+                                .'</span>';
+                        } catch (DecryptException) {
+                            return $key->identifier.'(encrypted with old key)';
+                        }
+                    })
+                    ->html()
+                    ->copyable(fn (ApiKey $key): bool => $key->user_id === auth()->id()),
+
+                TextColumn::make('memo')
+                    ->label(trans('admin/api.memo'))
+                    ->limit(50),
+
+                TextColumn::make('last_used_at')
+                    ->label(trans('admin/api.last-used'))
+                    ->dateTime()
+                    ->placeholder(trans('admin/api.never-used')),
+
+                TextColumn::make('created_at')
+                    ->label(trans('admin/api.created'))
+                    ->dateTime()
+                    ->sortable(),
+
+                TextColumn::make('user.username')
+                    ->label(trans('admin/api.author'))
+                    ->searchable()
+                    ->sortable(),
+            ])
+            ->actions([
+                Action::make('revoke')
+                    ->label(trans('admin/api.revoke'))
+                    ->icon('heroicon-o-trash')
+                    ->color('danger')
+                    ->authorize(fn (): bool => AdminAccess::isRoot())
+                    ->requiresConfirmation()
+                    ->modalHeading(trans('admin/api.revoke-title'))
+                    ->modalDescription(trans('admin/api.revoke-warning'))
+                    ->action(fn (ApiKey $record) => $record->delete())
+                    ->successNotificationTitle(trans('admin/api.revoked')),
+            ]);
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => ListApiKeys::route('/'),
+            'create' => CreateApiKey::route('/create'),
+        ];
+    }
+}

@@ -1,0 +1,75 @@
+import react from '@vitejs/plugin-react';
+import laravel from 'laravel-vite-plugin';
+import { dirname, resolve } from 'pathe';
+import { fileURLToPath } from 'node:url';
+import { defineConfig } from 'vitest/config';
+import tailwindcss from '@tailwindcss/vite'
+
+const plugins = [
+    react(),
+    tailwindcss(),
+];
+
+if (process.env.VITEST === undefined) {
+    plugins.push(
+        laravel({
+            input: [
+                'resources/scripts/index.tsx',
+                'resources/scripts/admin/filePicker.ts',
+                'resources/css/filament/admin/theme.css',
+            ],
+        }),
+    );
+}
+
+export default defineConfig({
+    define:
+        process.env.VITEST === undefined
+            ? {
+                  'process.env': {},
+                  'process.platform': null,
+                  'process.version': null,
+                  'process.versions': null,
+                  global: 'globalThis',
+              }
+            : undefined,
+
+    plugins,
+
+    server: {
+        watch: {
+            ignored: ['**/vendor/**', '**/storage/**', '**/bootstrap/**', '**/lang/**', '**/database/**'],
+        },
+    },
+
+    build: {
+        chunkSizeWarningLimit: 2000,
+    },
+    
+    resolve: {
+        alias: {
+            '@': resolve(dirname(fileURLToPath(import.meta.url)), 'resources', 'scripts'),
+            '@definitions': resolve(
+                dirname(fileURLToPath(import.meta.url)),
+                'resources',
+                'scripts',
+                'api',
+                'definitions',
+            ),
+            '@feature': resolve(
+                dirname(fileURLToPath(import.meta.url)),
+                'resources',
+                'scripts',
+                'components',
+                'server',
+                'features',
+            ),
+        },
+    },
+
+    test: {
+        environment: 'happy-dom',
+        include: ['resources/scripts/**/*.{spec,test}.{ts,tsx}'],
+        globals: true,
+    },
+});

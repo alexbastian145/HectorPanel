@@ -1,0 +1,57 @@
+<?php
+
+namespace App\Policies;
+
+use App\Models\Server;
+use App\Models\User;
+use App\Services\Subusers\SubuserPreviewContext;
+
+class ServerPolicy
+{
+    /**
+     * Checks if the user has the given permission on/for the server.
+     */
+    protected function checkPermission(User $user, Server $server, string $permission): bool
+    {
+        $subuser = $server->subusers->where('user_id', $user->id)->first();
+        if (! $subuser || empty($permission)) {
+            return false;
+        }
+
+        return in_array($permission, $subuser->permissions);
+    }
+
+    /**
+     * Determines whether a user may perform an ability on a server.
+     *
+     * Preview contexts restrict access to the specified server and permitted abilities. Otherwise,
+     * root administrators and server owners are authorized automatically, while other users are
+     * authorized according to their server permissions.
+     *
+     * @return bool `true` if the user is authorized, `false` otherwise.
+     */
+    public function before(User $user, string $ability, Server $server): bool
+    {
+        $preview = request()->attributes->get(SubuserPreviewContext::class);
+        if ($preview instanceof SubuserPreviewContext) {
+            return $preview->isServer($server) && $preview->allows($ability);
+        }
+
+        if ($user->root_admin || $server->owner_id === $user->id) {
+            return true;
+        }
+
+        return $this->checkPermission($user, $server, $ability)
+            || in_array($ability, $user->roleServerPermissions(), true);
+    }
+
+    /**
+     * This is a horrendous hack to avoid Laravel's "smart" behavior that does
+     * not call the before() function if there isn't a function matching the
+     * policy permission.
+     */
+    public function __call(string $name, mixed $arguments)
+    {
+        // do nothing
+    }
+}

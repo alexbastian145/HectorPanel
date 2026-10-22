@@ -1,0 +1,122 @@
+<?php
+
+namespace App\Services\Backups;
+
+use App\Exceptions\Service\Backup\TooManyBackupsException;
+use App\Extensions\Backups\BackupManager;
+use App\Models\Backup;
+use App\Models\Server;
+use App\Repositories\Agent\DaemonBackupRepository;
+use App\Repositories\Eloquent\BackupRepository;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\ConnectionInterface;
+use Ramsey\Uuid\Uuid;
+use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
+use Webmozart\Assert\Assert;
+
+class InitiateBackupService
+{
+    private array $ignoredFiles = [];
+
+    private bool $isLocked = false;
+
+    /**
+     * InitiateBackupService constructor.
+     */
+    public function __construct(
+        private BackupRepository $repository,
+        private ConnectionInterface $connection,
+        private DaemonBackupRepository $daemonBackupRepository,
+        private BackupManager $backupManager,
+    ) {}
+
+    /**
+     * Set if the backup should be locked once it is created which will prevent
+     * its deletion by users or automated system processes.
+     */
+    public function setIsLocked(bool $isLocked): self
+    {
+        $this->isLocked = $isLocked;
+
+        return $this;
+    }
+
+    /**
+     * Sets the files to be ignored by this backup.
+     *
+     * @param  string[]|null  $ignored
+     */
+    public function setIgnoredFiles(?array $ignored): self
+    {
+        if (is_array($ignored)) {
+            foreach ($ignored as $value) {
+                Assert::string($value);
+            }
+        }
+
+        // Set the ignored files to be any values that are not empty in the array. Don't use
+        // the PHP empty function here incase anything that is "empty" by default (0, false, etc.)
+        // were passed as a file or folder name.
+        $this->ignoredFiles = is_null($ignored) ? [] : array_filter($ignored, function ($value) {
+            return strlen($value) > 0;
+        });
+
+        return $this;
+    }
+
+    /**
+     * Initiates the backup process for a server on Agent.
+     *
+     * @throws \Throwable
+     * @throws TooManyBackupsException
+     * @throws TooManyRequestsHttpException
+     */
+    public function handle(Server $server, ?string $name = null, bool $override = false, ?string $format = null): Backup
+    {
+        $limit = config('backups.throttles.limit');
+        $period = config('backups.throttles.period');
+        if ($period > 0) {
+            $previous = $this->repository->getBackupsGeneratedDuringTimespan($server->id, $period);
+            if ($previous->count() >= $limit) {
+                $message = sprintf('Only %d backups may be generated within a %d second span of time.', $limit, $period);
+
+                throw new TooManyRequestsHttpException((int) CarbonImmutable::now()->diffInSeconds($previous->last()->created_at->addSeconds($period)), $message);
+            }
+        }
+
+        // Check if the server has reached or exceeded its backup limit.
+        // completed_at == null will cover any ongoing backups, while is_successful == true will cover any completed backups.
+        $successful = $this->repository->getNonFailedBackups($server);
+        if (! $server->backup_limit || $successful->count() >= $server->backup_limit) {
+            // Do not allow the user to continue if this server is already at its limit and can't override.
+            if (! $override || $server->backup_limit <= 0) {
+                throw new TooManyBackupsException($server->backup_limit);
+            }
+
+            // Ensure a backup is available for rotation. It is selected and deleted only after the
+            // replacement reports a successful completion so failed backups preserve the existing copy.
+            if (! $successful->where('is_locked', false)->exists()) {
+                throw new TooManyBackupsException($server->backup_limit);
+            }
+        }
+
+        return $this->connection->transaction(function () use ($server, $name, $format) {
+            /** @var Backup $backup */
+            $backup = $this->repository->create([
+                'server_id' => $server->id,
+                'uuid' => Uuid::uuid4()->toString(),
+                'name' => trim($name) ?: sprintf('Backup at %s', CarbonImmutable::now()->toDateTimeString()),
+                'ignored_files' => array_values($this->ignoredFiles),
+                'disk' => $this->backupManager->getDefaultAdapter(),
+                'format' => $format ?? $server->user->archive_format,
+                'is_locked' => $this->isLocked,
+            ], true, true);
+
+            $this->daemonBackupRepository->setServer($server)
+                ->setBackupAdapter($this->backupManager->getDefaultAdapter())
+                ->backup($backup);
+
+            return $backup;
+        });
+    }
+}

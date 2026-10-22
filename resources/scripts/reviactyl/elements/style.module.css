@@ -1,0 +1,27 @@
+.editor {
+    position: relative;
+    min-height: 16rem;
+    height: calc(100vh - 20rem);
+}
+
+.editor > div {
+    height: 100%;
+    border-radius: var(--radius-ui);
+}
+
+@keyframes retry-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.retryButton:hover {
+    animation: retry-spin 2s linear infinite;
+}
+
+.monacoEditor {
+    position: relative;
+    min-height: 16rem;
+    height: calc(100vh - 20rem);
+    border-radius: var(--radius-ui);
+}

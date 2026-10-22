@@ -1,0 +1,70 @@
+<?php
+
+namespace App\Repositories\Agent;
+
+use App\Exceptions\Http\Connection\DaemonConnectionException;
+use App\Models\Node;
+use GuzzleHttp\Exception\TransferException;
+use Psr\Http\Message\ResponseInterface;
+
+/**
+ * @method \App\Repositories\Agent\DaemonConfigurationRepository setNode(\App\Models\Node $node)
+ * @method \App\Repositories\Agent\DaemonConfigurationRepository setServer(\App\Models\Server $server)
+ */
+class DaemonConfigurationRepository extends DaemonRepository
+{
+    /**
+     * Returns system information from the agent instance.
+     *
+     * @throws DaemonConnectionException
+     */
+    public function getSystemInformation(?int $version = null, ?int $timeout = null): array
+    {
+        try {
+            $options = $timeout === null ? [] : ['timeout' => $timeout, 'connect_timeout' => min($timeout, 2)];
+            $response = $this->getHttpClient()->get('/api/system'.(! is_null($version) ? '?v='.$version : ''), $options);
+        } catch (TransferException $exception) {
+            throw new DaemonConnectionException($exception);
+        }
+
+        return json_decode($response->getBody()->__toString(), true);
+    }
+
+    /**
+     * Downloads and installs a specific official Agent release.
+     *
+     * @throws DaemonConnectionException
+     */
+    public function updateSystem(string $version, string $channel = 'stable'): array
+    {
+        try {
+            $response = $this->getHttpClient()->post('/api/system/update', [
+                'json' => ['version' => $version, 'channel' => $channel],
+                'timeout' => 150,
+            ]);
+        } catch (TransferException $exception) {
+            throw new DaemonConnectionException($exception);
+        }
+
+        return json_decode($response->getBody()->__toString(), true);
+    }
+
+    /**
+     * Updates the configuration information for a daemon. Updates the information for
+     * this instance using a passed-in model. This allows us to change plenty of information
+     * in the model, and still use the old, pre-update model to actually make the HTTP request.
+     *
+     * @throws DaemonConnectionException
+     */
+    public function update(Node $node): ResponseInterface
+    {
+        try {
+            return $this->getHttpClient()->post(
+                '/api/update',
+                ['json' => $node->getConfiguration()]
+            );
+        } catch (TransferException $exception) {
+            throw new DaemonConnectionException($exception);
+        }
+    }
+}

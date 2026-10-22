@@ -1,0 +1,314 @@
+import { useEffect, useState } from 'react';
+import { Form, Formik, FormikHelpers } from 'formik';
+import { object, string } from 'yup';
+import Modal from '@/reviactyl/elements/Modal';
+import Button from '@/reviactyl/elements/Button';
+import Field from '@/reviactyl/elements/Field';
+import createServerCategory from '@/api/account/createServerCategory';
+import getServerCategories, { ServerCategory } from '@/api/account/getServerCategories';
+import deleteServerCategory from '@/api/account/deleteServerCategory';
+import updateServerCategory from '@/api/account/updateServerCategory';
+import reorderServerCategories from '@/api/account/reorderServerCategories';
+import useFlash from '@/plugins/useFlash';
+import FlashMessageRender from '@/components/FlashMessageRender';
+import { FaTrash, FaPen, FaPlus, FaLayerGroup, FaArrowDownWideShort, FaBars } from 'react-icons/fa6';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
+import { useTranslation } from 'react-i18next';
+import Title from '@/reviactyl/ui/Title';
+import Card from '@/reviactyl/ui/Card';
+
+interface Props {
+    visible: boolean;
+    onDismissed: () => void;
+    onCategoryChanged: () => void;
+}
+
+interface Values {
+    name: string;
+    description: string;
+    color: string;
+}
+
+export default ({ visible, onDismissed, onCategoryChanged }: Props) => {
+    const { t } = useTranslation('dashboard/index');
+    const { clearFlashes, clearAndAddHttpError } = useFlash();
+    const [categories, setCategories] = useState<ServerCategory[]>([]);
+    const [editingCategory, setEditingCategory] = useState<ServerCategory | null>(null);
+
+    const loadCategories = () => {
+        getServerCategories()
+            .then((data) => setCategories(data))
+            .catch((error: any) => clearAndAddHttpError({ key: 'category-modal', error }));
+    };
+
+    useEffect(() => {
+        if (visible) {
+            clearFlashes('category-modal');
+            loadCategories();
+        }
+    }, [visible]);
+
+    const submit = (values: Values, { setSubmitting, resetForm }: FormikHelpers<Values>) => {
+        clearFlashes('category-modal');
+
+        const action = editingCategory
+            ? updateServerCategory(editingCategory.uuid, values)
+            : createServerCategory(values);
+
+        action
+            .then(() => {
+                resetForm();
+                setEditingCategory(null);
+                loadCategories();
+                onCategoryChanged();
+            })
+            .catch((error: any) => {
+                clearAndAddHttpError({ key: 'category-modal', error });
+                setSubmitting(false);
+            });
+    };
+
+    const handleDelete = (uuid: string) => {
+        if (!confirm(t('categories.delete-confirm'))) return;
+
+        deleteServerCategory(uuid)
+            .then(() => {
+                loadCategories();
+                onCategoryChanged();
+            })
+            .catch((error: any) => clearAndAddHttpError({ key: 'category-modal', error }));
+    };
+
+    const onDragEnd = (result: DropResult) => {
+        if (!result.destination) return;
+
+        const newCategories = [...categories];
+        const [reorderedItem] = newCategories.splice(result.source.index, 1);
+
+        if (!reorderedItem) return;
+
+        newCategories.splice(result.destination.index, 0, reorderedItem);
+        setCategories(newCategories);
+
+        reorderServerCategories(newCategories.map((category) => category.uuid))
+            .then(() => onCategoryChanged())
+            .catch((error: any) => clearAndAddHttpError({ key: 'category-modal', error }));
+    };
+
+    return (
+        <Modal visible={visible} onDismissed={onDismissed} dismissable={true} size='lg' noScroll={true}>
+            <div className='mb-6 border-b border-gray-800 pb-4'>
+                <Title className='text-2xl font-semibold text-gray-100'>{t('categories.manage-title')}</Title>
+            </div>
+
+            <div className='mb-6'>
+                <FlashMessageRender byKey='category-modal' />
+            </div>
+
+            <div className='flex flex-col gap-8 lg:flex-row'>
+                <div className='min-w-0 flex-1'>
+                    <div className='flex items-center gap-2 mb-5'>
+                        <div className='bg-blue-500/10 p-2 rounded-ui'>
+                            {editingCategory ? (
+                                <FaPen className='text-blue-400' />
+                            ) : (
+                                <FaPlus className='text-blue-400' />
+                            )}
+                        </div>
+
+                        <h3 className='text-lg font-semibold text-gray-200'>
+                            {editingCategory ? t('categories.modify-category') : t('categories.create-category')}
+                        </h3>
+                    </div>
+
+                    <Card>
+                        <Formik
+                            onSubmit={submit}
+                            initialValues={{
+                                name: editingCategory?.name || '',
+                                description: editingCategory?.description || '',
+                                color: editingCategory?.color || '#3b82f6',
+                            }}
+                            validationSchema={object().shape({
+                                name: string().required().max(191),
+                                description: string().max(255).nullable(),
+                                color: string()
+                                    .matches(/^#([a-f0-9]{6}|[a-f0-9]{3})$/i, t('categories.color-invalid'))
+                                    .max(7),
+                            })}
+                            enableReinitialize
+                        >
+                            {({ isSubmitting, values }) => (
+                                <Form>
+                                    <div className='flex flex-col gap-5'>
+                                        <Field
+                                            name='name'
+                                            label={t('categories.category-name')}
+                                            placeholder={t('categories.name-placeholder')}
+                                        />
+
+                                        <div className='flex items-end gap-3'>
+                                            <div className='flex-1'>
+                                                <Field
+                                                    name='color'
+                                                    label={t('categories.theme-color')}
+                                                    type='color'
+                                                    style={{ height: '42px', padding: '0.2rem' }}
+                                                />
+                                            </div>
+
+                                            <div className='flex-none pb-2 text-xs text-gray-400 flex items-center gap-1.5'>
+                                                <div
+                                                    style={{
+                                                        backgroundColor: values.color || '#3b82f6',
+                                                    }}
+                                                    className='w-3 h-3 rounded-full transition-colors duration-200'
+                                                />
+                                                {t('categories.preview')}
+                                            </div>
+                                        </div>
+
+                                        <Field
+                                            name='description'
+                                            label={t('categories.description')}
+                                            placeholder={t('categories.description-placeholder')}
+                                        />
+
+                                        <div className='mt-2 flex flex-col gap-3'>
+                                            <Button
+                                                type='submit'
+                                                disabled={isSubmitting}
+                                                isLoading={isSubmitting}
+                                                className='w-full'
+                                            >
+                                                {editingCategory
+                                                    ? t('categories.update-category')
+                                                    : t('categories.create-category-button')}
+                                            </Button>
+                                            {editingCategory && (
+                                                <Button
+                                                    type='button'
+                                                    isSecondary
+                                                    onClick={() => setEditingCategory(null)}
+                                                    className='w-full'
+                                                >
+                                                    {t('categories.discard-changes')}
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </Form>
+                            )}
+                        </Formik>
+                    </Card>
+                </div>
+
+                <div className='min-w-0 flex-1'>
+                    <div className='flex items-center justify-between mb-5'>
+                        <div className='flex items-center gap-2'>
+                            <div className='bg-purple-500/10 p-2 rounded-ui'>
+                                <FaArrowDownWideShort className='text-purple-400' />
+                            </div>
+
+                            <h3 className='text-lg font-semibold text-gray-200'>{t('categories.arrange-order')}</h3>
+                        </div>
+
+                        <span className='text-xs text-gray-400 bg-gray-900 px-2.5 py-1 rounded-ui border border-gray-800'>
+                            {t('categories.categories-count', { count: categories.length })}
+                        </span>
+                    </div>
+
+                    <div className='pr-2'>
+                        {categories.length === 0 ? (
+                            <Card className='border-2! border-dashed! p-12! flex items-center justify-center gap-3'>
+                                <FaLayerGroup className='text-3xl text-gray-400' />
+                                <p className='text-sm text-gray-400'>{t('categories.no-custom-categories')}</p>
+                            </Card>
+                        ) : (
+                            <DragDropContext onDragEnd={onDragEnd}>
+                                <Droppable droppableId='categories'>
+                                    {(provided) => (
+                                        <div {...provided.droppableProps} ref={provided.innerRef}>
+                                            {categories.map((cat, index) => (
+                                                <Draggable key={cat.uuid} draggableId={cat.uuid} index={index}>
+                                                    {(provided, snapshot) => (
+                                                        <div
+                                                            ref={provided.innerRef}
+                                                            {...provided.draggableProps}
+                                                            {...provided.dragHandleProps}
+                                                            className={[
+                                                                'flex flex-col items-start p-3.5 mb-3',
+                                                                'transition-colors duration-200',
+                                                                'cursor-grab active:cursor-grabbing',
+                                                                'bg-gray-800 border border-gray-700 rounded-ui',
+                                                                'sm:flex-row sm:items-center sm:justify-between',
+                                                                snapshot.isDragging ? 'shadow-lg shadow-black/40' : '',
+                                                            ].join(' ')}
+                                                        >
+                                                            <div className='flex items-center min-w-0'>
+                                                                <FaBars className='text-gray-600 mr-3 cursor-grab' />
+
+                                                                <div
+                                                                    className='w-5 h-5 rounded-[0.4rem] mr-3 shrink-0 border border-white/10'
+                                                                    style={{
+                                                                        backgroundColor: cat.color || '#3b82f6',
+                                                                    }}
+                                                                />
+
+                                                                <div className='min-w-0'>
+                                                                    <p className='font-semibold text-gray-100 overflow-hidden text-ellipsis whitespace-nowrap text-[0.95rem]'>
+                                                                        {cat.name}
+                                                                    </p>
+
+                                                                    <p className='text-[0.7rem] text-gray-400 overflow-hidden text-ellipsis whitespace-nowrap'>
+                                                                        {cat.description ||
+                                                                            t('categories.no-description')}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className='mt-3 w-full flex items-center justify-end gap-1.5 shrink-0 sm:mt-0 sm:w-auto'>
+                                                                <button
+                                                                    type='button'
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setEditingCategory(cat);
+                                                                    }}
+                                                                    className={
+                                                                        'p-2 rounded-lg border border-blue-600/20 bg-blue-400/20 text-blue-400 cursor-pointer'
+                                                                    }
+                                                                    title={t('categories.edit')}
+                                                                >
+                                                                    <FaPen className='text-sm' />
+                                                                </button>
+
+                                                                <button
+                                                                    type='button'
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleDelete(cat.uuid);
+                                                                    }}
+                                                                    className={
+                                                                        'p-2 rounded-lg border border-danger/20 bg-danger/20 text-danger cursor-pointer'
+                                                                    }
+                                                                    title={t('categories.delete')}
+                                                                >
+                                                                    <FaTrash className='text-sm' />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </Draggable>
+                                            ))}
+                                            {provided.placeholder}
+                                        </div>
+                                    )}
+                                </Droppable>
+                            </DragDropContext>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </Modal>
+    );
+};

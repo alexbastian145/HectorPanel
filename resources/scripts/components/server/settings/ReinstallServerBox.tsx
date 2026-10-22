@@ -1,0 +1,72 @@
+import { useEffect, useState } from 'react';
+import { ServerContext } from '@/state/server';
+import TitledGreyBox from '@/reviactyl/elements/TitledGreyBox';
+import reinstallServer from '@/api/server/reinstallServer';
+import { Actions, useStoreActions } from 'easy-peasy';
+import { ApplicationStore } from '@/state';
+import { httpErrorToHuman } from '@/api/http';
+import { Button } from '@/reviactyl/components/button/index';
+import { Dialog } from '@/reviactyl/elements/dialog';
+import { useTranslation } from 'react-i18next';
+import { FaAnchorLock, FaAnchor } from 'react-icons/fa6';
+
+export default () => {
+    const { t } = useTranslation('server/settings');
+    const uuid = ServerContext.useStoreState((state) => state.server.data!.uuid);
+    const skipScripts = ServerContext.useStoreState((state) => state.server.data!.skipScripts);
+    const [modalVisible, setModalVisible] = useState(false);
+    const { addFlash, clearFlashes } = useStoreActions((actions: Actions<ApplicationStore>) => actions.flashes);
+
+    const reinstall = () => {
+        clearFlashes('settings');
+        reinstallServer(uuid)
+            .then(() => {
+                addFlash({
+                    key: 'settings',
+                    type: 'success',
+                    message: 'Your server has begun the reinstallation process.',
+                });
+            })
+            .catch((error) => {
+                console.error(error);
+
+                addFlash({ key: 'settings', type: 'error', message: httpErrorToHuman(error) });
+            })
+            .then(() => setModalVisible(false));
+    };
+
+    useEffect(() => {
+        clearFlashes();
+    }, []);
+
+    if (skipScripts) {
+        return (
+            <TitledGreyBox icon={FaAnchorLock} title={'Reinstall Server'}>
+                <p className='text-sm'>{t('reinstall.disabled')}</p>
+            </TitledGreyBox>
+        );
+    }
+
+    return (
+        <TitledGreyBox icon={FaAnchor} title={t('reinstall.title')} className='relative'>
+            <Dialog.Confirm
+                open={modalVisible}
+                title={t('reinstall.confirm-title')}
+                confirm={t('reinstall.confirm')}
+                onClose={() => setModalVisible(false)}
+                onConfirmed={reinstall}
+            >
+                {t('reinstall.info')}
+            </Dialog.Confirm>
+            <p className='text-sm'>
+                {t('reinstall.info-1')}&nbsp;
+                <strong className='font-medium'>{t('reinstall.info-2')}</strong>
+            </p>
+            <div className='mt-6 text-right'>
+                <Button.Danger variant={Button.Variants.Secondary} onClick={() => setModalVisible(true)}>
+                    {t('reinstall.button')}
+                </Button.Danger>
+            </div>
+        </TitledGreyBox>
+    );
+};

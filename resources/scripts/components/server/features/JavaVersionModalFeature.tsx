@@ -1,0 +1,122 @@
+import { useEffect, useState } from 'react';
+import { ServerContext } from '@/state/server';
+import Modal from '@/reviactyl/elements/Modal';
+import Button from '@/reviactyl/elements/Button';
+import setSelectedDockerImage from '@/api/server/setSelectedDockerImage';
+import FlashMessageRender from '@/components/FlashMessageRender';
+import useFlash from '@/plugins/useFlash';
+import { SocketEvent, SocketRequest } from '@/components/server/events';
+import Select from '@/reviactyl/elements/Select';
+import useWebsocketEvent from '@/plugins/useWebsocketEvent';
+import Can from '@/reviactyl/elements/Can';
+import getServerStartup from '@/api/swr/getServerStartup';
+import InputSpinner from '@/reviactyl/elements/InputSpinner';
+
+const MATCH_ERRORS = [
+    'minecraft 1.17 requires running the server with java 16 or above',
+    'minecraft 1.18 requires running the server with java 17 or above',
+    'java.lang.unsupportedclassversionerror',
+    'unsupported major.minor version',
+    'has been compiled by a more recent version of the java runtime',
+];
+
+const JavaVersionModalFeature = () => {
+    const [visible, setVisible] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [selectedVersion, setSelectedVersion] = useState('');
+
+    const uuid = ServerContext.useStoreState((state) => state.server.data!.uuid);
+    const status = ServerContext.useStoreState((state) => state.status.value);
+    const { clearFlashes, clearAndAddHttpError } = useFlash();
+    const { instance } = ServerContext.useStoreState((state) => state.socket);
+
+    const { data, isValidating, mutate } = getServerStartup(uuid, null, { revalidateOnMount: false });
+    const images = Object.values(data?.dockerImages || {});
+    const selectedImage = images.includes(selectedVersion) ? selectedVersion : images[0] || '';
+
+    useEffect(() => {
+        if (!visible) return;
+
+        mutate();
+    }, [visible]);
+
+    useWebsocketEvent(SocketEvent.CONSOLE_OUTPUT, (data) => {
+        if (status === 'running') return;
+
+        if (MATCH_ERRORS.some((p) => data.toLowerCase().includes(p.toLowerCase()))) {
+            setVisible(true);
+        }
+    });
+
+    const updateJava = () => {
+        if (!selectedImage) return;
+
+        setLoading(true);
+        clearFlashes('feature:javaVersion');
+
+        setSelectedDockerImage(uuid, selectedImage)
+            .then(() => {
+                if (status === 'offline' && instance) {
+                    instance.send(SocketRequest.SET_STATE, 'restart');
+                }
+                setVisible(false);
+            })
+            .catch((error) => clearAndAddHttpError({ key: 'feature:javaVersion', error }))
+            .then(() => setLoading(false));
+    };
+
+    useEffect(() => {
+        clearFlashes('feature:javaVersion');
+    }, []);
+
+    return (
+        <Modal
+            visible={visible}
+            onDismissed={() => setVisible(false)}
+            closeOnBackground={false}
+            showSpinnerOverlay={loading}
+        >
+            <FlashMessageRender key={'feature:javaVersion'} className='mb-4' />
+            <h2 className='text-2xl mb-4 text-gray-100'>Unsupported Java Version</h2>
+            <p className='mt-4'>
+                This server is currently running an unsupported version of Java and cannot be started.
+                <Can action={'startup.docker-image'}>
+                    &nbsp;Please select a supported version from the list below to continue starting the server.
+                </Can>
+            </p>
+            <Can action={'startup.docker-image'}>
+                <div className='mt-4'>
+                    <InputSpinner visible={!data || isValidating}>
+                        <Select
+                            value={selectedImage}
+                            disabled={!selectedImage}
+                            onChange={(e) => setSelectedVersion(e.target.value)}
+                        >
+                            {!data ? (
+                                <option disabled />
+                            ) : (
+                                Object.keys(data.dockerImages).map((key) => (
+                                    <option key={key} value={data.dockerImages[key]}>
+                                        {key}
+                                    </option>
+                                ))
+                            )}
+                        </Select>
+                    </InputSpinner>
+                </div>
+            </Can>
+            <div className='mt-8 flex flex-col justify-end space-y-4 sm:flex-row sm:space-x-4 sm:space-y-0'>
+                <Button isSecondary onClick={() => setVisible(false)} className='w-full sm:w-auto'>
+                    Cancel
+                </Button>
+                <Can action={'startup.docker-image'}>
+                    <Button disabled={!selectedImage} onClick={updateJava} className='w-full sm:w-auto'>
+                        Update Docker Image
+                    </Button>
+                </Can>
+            </div>
+        </Modal>
+    );
+};
+
+export default JavaVersionModalFeature;

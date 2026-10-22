@@ -1,0 +1,54 @@
+import http from '@/api/http';
+
+export interface DatabaseImportStatus {
+    state: 'running' | 'completed' | 'failed';
+    phase?: 'capturing' | 'importing';
+    capturedStatements?: number;
+    statements: number;
+    error: string | null;
+    detail: string | null;
+}
+
+export interface ServerDatabase {
+    id: string;
+    name: string;
+    username: string;
+    connectionString: string;
+    allowConnectionsFrom: string;
+    password?: string;
+    importStatus?: DatabaseImportStatus | null;
+}
+
+export const rawDataToDatabaseImportStatus = (data: any): DatabaseImportStatus | null =>
+    data
+        ? {
+              state: data.state,
+              phase: data.phase ?? 'importing',
+              capturedStatements: data.captured_statements ?? 0,
+              statements: data.statements ?? 0,
+              error: data.error ?? null,
+              detail: data.detail ?? null,
+          }
+        : null;
+
+export const rawDataToServerDatabase = (data: any): ServerDatabase => ({
+    id: data.id,
+    name: data.name,
+    username: data.username,
+    connectionString: `${data.host.address}:${data.host.port}`,
+    allowConnectionsFrom: data.connections_from,
+    password: data.relationships.password?.attributes?.password,
+    importStatus: rawDataToDatabaseImportStatus(data.import),
+});
+
+export default (uuid: string, includePassword = true): Promise<ServerDatabase[]> => {
+    return new Promise((resolve, reject) => {
+        http.get(`/api/client/servers/${uuid}/databases`, {
+            params: includePassword ? { include: 'password' } : undefined,
+        })
+            .then((response) =>
+                resolve((response.data.data || []).map((item: any) => rawDataToServerDatabase(item.attributes))),
+            )
+            .catch(reject);
+    });
+};

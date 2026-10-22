@@ -1,0 +1,25 @@
+declare module '*.jpg';
+declare module '*.png';
+declare module '*.svg';
+declare module '*.css';
+declare module 'i18next-http-backend';
+
+interface Window {
+    PanelUser?: {
+        uuid: string;
+        username: string;
+        email: string;
+        language: string;
+        root_admin: boolean;
+        admin?: boolean;
+        permissions?: string[];
+        use_totp: boolean;
+    };
+    SiteConfiguration?: Record<string, any>;
+    SocialLoginConfiguration?: {
+        google: boolean;
+        discord: boolean;
+        github: boolean;
+    };
+    PanelConfiguration?: Record<string, any>;
+}

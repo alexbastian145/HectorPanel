@@ -1,0 +1,36 @@
+export type ServerStatus =
+    'installing' | 'install_failed' | 'reinstall_failed' | 'suspended' | 'restoring_backup' | null;
+
+export interface ServerBackup {
+    uuid: string;
+    isSuccessful: boolean;
+    isLocked: boolean;
+    name: string;
+    format: 'tar.gz' | 'zip';
+    ignoredFiles: string;
+    checksum: string;
+    bytes: number;
+    createdAt: Date;
+    completedAt: Date | null;
+}
+
+export interface ServerEggVariable {
+    name: string;
+    description: string;
+    envVariable: string;
+    defaultValue: string;
+    serverValue: string | null;
+    isEditable: boolean;
+    isSecret: boolean;
+    hasValue: boolean;
+    rules: string[];
+}
+
+export interface ServerCategory {
+    uuid: string;
+    name: string;
+    description: string | null;
+    color: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+}

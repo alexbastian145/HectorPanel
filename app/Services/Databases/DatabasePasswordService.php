@@ -1,0 +1,46 @@
+<?php
+
+namespace App\Services\Databases;
+
+use App\Contracts\Repository\DatabaseRepositoryInterface;
+use App\Extensions\DynamicDatabaseConnection;
+use App\Helpers\Utilities;
+use App\Models\Database;
+use Illuminate\Contracts\Encryption\Encrypter;
+use Illuminate\Database\ConnectionInterface;
+
+class DatabasePasswordService
+{
+    /**
+     * DatabasePasswordService constructor.
+     */
+    public function __construct(
+        private ConnectionInterface $connection,
+        private DynamicDatabaseConnection $dynamic,
+        private Encrypter $encrypter,
+        private DatabaseRepositoryInterface $repository,
+    ) {}
+
+    /**
+     * Updates a password for a given database.
+     *
+     * @throws \Throwable
+     */
+    public function handle(Database|int $database): string
+    {
+        $password = Utilities::randomStringWithSpecialCharacters(24);
+
+        $this->connection->transaction(function () use ($database, $password) {
+            $this->dynamic->set('dynamic', $database->database_host_id);
+
+            $this->repository->withoutFreshModel()->update($database->id, [
+                'password' => $this->encrypter->encrypt($password),
+            ]);
+
+            $this->repository->updateUserPassword($database->username, $database->remote, $password);
+            $this->repository->flush();
+        });
+
+        return $password;
+    }
+}

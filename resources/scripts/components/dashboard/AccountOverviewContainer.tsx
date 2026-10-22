@@ -1,0 +1,147 @@
+import { useState, useEffect } from 'react';
+import UpdatePasswordForm from '@/components/dashboard/forms/UpdatePasswordForm';
+import UpdateEmailAddressForm from '@/components/dashboard/forms/UpdateEmailAddressForm';
+import ConfigureTwoFactorForm from '@/components/dashboard/forms/ConfigureTwoFactorForm';
+import MessageBox from '@/components/MessageBox';
+import { useLocation } from 'react-router-dom';
+import ContentBlock from '@/reviactyl/ui/ContentBlock';
+import Card from '@/reviactyl/ui/Card';
+import Gravatar from '@/reviactyl/ui/Avatar';
+import { useStoreState } from 'easy-peasy';
+import { ApplicationStore } from '@/state';
+import TitledGreyBox from '@/reviactyl/elements/TitledGreyBox';
+import Title from '@/reviactyl/ui/Title';
+import { ExternalLinkIcon } from '@heroicons/react/solid';
+import { LogoutIcon } from '@heroicons/react/outline';
+import logout from '@/api/auth/logout';
+import SpinnerOverlay from '@/reviactyl/elements/SpinnerOverlay';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '@/reviactyl/ui/LanguageSwitcher';
+import { ThemeToggle } from '@/reviactyl/ui/Theme';
+import useFlash from '@/plugins/useFlash';
+import FlashMessageRender from '@/components/FlashMessageRender';
+import FileEditorSwitcher from '@/reviactyl/ui/FileEditorSwitcher';
+import AvatarSelector from '@/components/dashboard/AvatarSelector';
+import ArchiveFormatSwitcher from '@/components/dashboard/ArchiveFormatSwitcher';
+
+import SocialLoginsContainer from '@/components/dashboard/forms/SocialLoginsContainer';
+import { ExtensionSlot } from '@/extensions/ExtensionSlot';
+import { FaBrush, FaEnvelope, FaLock, FaShield } from 'react-icons/fa6';
+
+export default () => {
+    const { t } = useTranslation('dashboard/account');
+    const { state } = useLocation();
+    const nameFirst = useStoreState((state) => state.user.data?.name_first);
+    const nameLast = useStoreState((state) => state.user.data?.name_last);
+    const rootAdmin = useStoreState((state) => state.user.data!.rootAdmin);
+    const adminAccess = useStoreState((state) => state.user.data!.adminAccess);
+    const name = useStoreState((state: ApplicationStore) => state.settings.data!.name);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
+    const { addFlash, clearFlashes } = useFlash();
+
+    useEffect(() => {
+        clearFlashes();
+
+        // @ts-expect-error this is valid
+        const sessionFlashes = window.SessionFlashes;
+        if (sessionFlashes) {
+            if (sessionFlashes.error) {
+                addFlash({ type: 'error', title: 'Error', message: sessionFlashes.error });
+            }
+            if (sessionFlashes.success) {
+                addFlash({ type: 'success', title: 'Success', message: sessionFlashes.success });
+            }
+            if (sessionFlashes.info) {
+                addFlash({ type: 'info', title: 'Info', message: sessionFlashes.info });
+            }
+            if (sessionFlashes.warning) {
+                addFlash({ type: 'warning', title: 'Warning', message: sessionFlashes.warning });
+            }
+            // @ts-expect-error this is valid
+            window.SessionFlashes = undefined;
+        }
+    }, []);
+
+    const onTriggerLogout = () => {
+        setIsLoggingOut(true);
+        logout().finally(() => {
+            window.location.href = '/';
+        });
+    };
+
+    return (
+        <ContentBlock title={t('overview.account-overview')}>
+            <FlashMessageRender className='mb-4' />
+            <ExtensionSlot name='account:overview:above' />
+            {state?.twoFactorRedirect && (
+                <MessageBox title={t('overview.2fa-required')} type={'error'}>
+                    {t('overview.2fa-alert')}
+                </MessageBox>
+            )}
+
+            <div className='mb-4 grid grid-cols-1 gap-4 lg:grid-cols-2'>
+                <div className={'flex flex-col gap-4'}>
+                    <ExtensionSlot name='account:overview:column1:start' />
+                    <Card className='overflow-hidden p-0!'>
+                        <SpinnerOverlay visible={isLoggingOut} />
+                        <div className='flex flex-col items-center px-5 py-8'>
+                            <Gravatar className='w-24 h-24 mb-3 shadow-lg' />
+                            <Title className='mb-1 text-2xl'>
+                                {nameFirst} {nameLast}
+                            </Title>
+                            <div className={'flex items-center gap-x-1'}>
+                                <span className='text-sm text-gray-400'>
+                                    {rootAdmin ? t('overview.administrator') : name + ' ' + t('overview.user')}
+                                </span>
+                                {adminAccess && (
+                                    // eslint-disable-next-line react/jsx-no-target-blank
+                                    <a href={`/admin`} target={'_blank'} className='h-5 w-5'>
+                                        <ExternalLinkIcon />
+                                    </a>
+                                )}
+                            </div>
+                            <div className='mt-1'>
+                                <button className='flex items-center space-x-1' onClick={onTriggerLogout}>
+                                    <span className='text-danger/80'>{t('overview.logout')}</span>{' '}
+                                    <LogoutIcon className='w-5 h-5 text-danger/80' strokeWidth={2} />
+                                </button>
+                            </div>
+                        </div>
+                        <div className='border-t border-gray-800'>
+                            <div className='p-3'>
+                                <Title className='text-sm'>{t('overview.profile-picture')}</Title>
+                            </div>
+                            <div className='px-3 pb-3'>
+                                <AvatarSelector />
+                            </div>
+                        </div>
+                    </Card>
+                    <ExtensionSlot name='account:overview:column1:middle' />
+                    <TitledGreyBox icon={FaEnvelope} title={t('overview.update-email')} showFlashes={'account:email'}>
+                        <UpdateEmailAddressForm />
+                    </TitledGreyBox>
+                    <TitledGreyBox icon={FaBrush} title={t('overview.customization')}>
+                        <LanguageSwitcher />
+                        <ThemeToggle />
+                        <FileEditorSwitcher />
+                        <ArchiveFormatSwitcher />
+                    </TitledGreyBox>
+                    <ExtensionSlot name='account:overview:column1:end' />
+                </div>
+                <div className={'flex flex-col gap-4'}>
+                    <ExtensionSlot name='account:overview:column2:start' />
+                    <SocialLoginsContainer />
+                    <TitledGreyBox icon={FaLock} title={t('overview.update-password')} showFlashes={'account:password'}>
+                        <UpdatePasswordForm />
+                    </TitledGreyBox>
+                    <ExtensionSlot name='account:overview:column2:middle' />
+                    <TitledGreyBox icon={FaShield} title={t('overview.2fa-verification')}>
+                        <ConfigureTwoFactorForm />
+                    </TitledGreyBox>
+                    <ExtensionSlot name='account:overview:column2:end' />
+                </div>
+            </div>
+            <ExtensionSlot name='account:overview:below' />
+        </ContentBlock>
+    );
+};

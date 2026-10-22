@@ -1,0 +1,88 @@
+<?php
+
+namespace App\Providers\Filament;
+
+use App\Http\Middleware\AdminAuthenticate;
+use App\Http\Middleware\EncryptCookies;
+use App\Http\Middleware\LanguageMiddleware;
+use App\Http\Middleware\PreventRequestForgery;
+use Filament\Http\Middleware\AuthenticateSession;
+use Filament\Http\Middleware\DisableBladeIconComponents;
+use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationGroup;
+use Filament\Panel;
+use Filament\PanelProvider;
+use Filament\Support\Assets\Css;
+use Filament\Support\Assets\Js;
+use Filament\Support\Colors\Color;
+use Filament\View\PanelsRenderHook;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Routing\Middleware\SubstituteBindings;
+use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
+
+class AdminPanelProvider extends PanelProvider
+{
+    public function panel(Panel $panel): Panel
+    {
+        return $panel
+            ->default()
+            ->id('admin')
+            ->path('admin')
+            ->spa(fn (): bool => ! request()->routeIs('filament.admin.pages.designify'))
+            ->spaUrlExceptions(fn (): array => [route('filament.admin.pages.designify')])
+            ->viteTheme('resources/css/filament/admin/theme.css')
+            ->homeUrl('/admin')
+            ->brandLogo(config('app.logo', '/reviactyl/logo.png'))
+            ->brandLogoHeight('3rem')
+            ->favicon(config('app.favicon', '/favicons/favicon.ico'))
+            ->font('Poppins')
+            ->colors([
+                'primary' => Color::Blue,
+            ])
+            ->assets([
+                Css::make('filament-layout', resource_path('css/filament/layout.css')),
+                Css::make('filament-monitoring', resource_path('css/filament/monitoring.css')),
+                Js::make('admin-session-expired', resource_path('js/filament/admin-session-expired.js')),
+            ])
+            ->breadcrumbs(false)
+            ->renderHook(
+                PanelsRenderHook::BODY_END,
+                fn () => Blade::render('@vite("resources/scripts/admin/filePicker.ts")'),
+            )
+            ->navigationGroups([
+                NavigationGroup::make(fn () => trans('admin/navigation.administration.title'))
+                    ->collapsible(false),
+                NavigationGroup::make(fn () => trans('admin/navigation.management.title'))
+                    ->collapsible(false),
+                NavigationGroup::make(fn () => trans('admin/navigation.service.title')),
+            ])
+            ->renderHook(
+                PanelsRenderHook::GLOBAL_SEARCH_BEFORE,
+                fn () => Blade::render('
+                    <a href="/" x-data x-tooltip="\'Return to Dashboard\'" class="fi-icon-btn">
+                        <x-tabler-layout-dashboard />
+                    </a>
+                '),
+            )
+            ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
+            ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
+            ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
+            ->middleware([
+                EncryptCookies::class,
+                StartSession::class,
+                AuthenticateSession::class,
+                PreventRequestForgery::class,
+                AddQueuedCookiesToResponse::class,
+                ShareErrorsFromSession::class,
+                SubstituteBindings::class,
+                DisableBladeIconComponents::class,
+                DispatchServingFilamentEvent::class,
+                LanguageMiddleware::class,
+            ])
+            ->authMiddleware([
+                AdminAuthenticate::class,
+            ], isPersistent: true);
+    }
+}

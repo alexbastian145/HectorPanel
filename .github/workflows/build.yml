@@ -1,0 +1,68 @@
+name: Build
+
+on:
+  pull_request:
+    branches:
+      - "develop"
+
+permissions: {}
+
+jobs:
+  ui:
+    name: UI
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [ 22 ]
+    steps:
+      - name: Code Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.3'
+          extensions: intl, mbstring, pdo, pdo_sqlite, zip
+          tools: composer:v2
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist --no-scripts
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - run: pnpm tsc
+      - run: pnpm lint
+      - run: pnpm test
+      - run: pnpm build
+      - run: php artisan filament:assets
+        env:
+          APP_KEY: SomeRandomString3232RandomString
+          CACHE_STORE: array
+          REDIS_CLIENT: predis
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:browser
