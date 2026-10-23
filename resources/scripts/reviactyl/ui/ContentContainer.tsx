@@ -6,7 +6,7 @@ import { useSidebarCollapsed } from '@/reviactyl/ui/useSidebarCollapsed';
 export const ContentContainer: React.FC<React.PropsWithChildren> = ({ children }) => {
     const layoutType = useStoreState((state: ApplicationStore) => state.designify.data!.layoutType);
     const [collapsed] = useSidebarCollapsed();
-    const offset = layoutType === 'modern' && collapsed ? 'lg:ps-20' : 'lg:ps-62.5';
+    const offset = layoutType === 'modern' && collapsed ? 'lg:ps-16' : 'lg:ps-64';
 
     return (
         <div
