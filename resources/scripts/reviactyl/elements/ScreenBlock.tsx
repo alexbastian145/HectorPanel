@@ -1,6 +1,6 @@
 import PageContentBlock from '@/reviactyl/elements/PageContentBlock';
 import Card from '@/reviactyl/ui/Card';
-import { FaCircleExclamation, FaMagnifyingGlass } from 'react-icons/fa6';
+import { FaCircleExclamation, FaCompass, FaHouse } from 'react-icons/fa6';
 
 interface ScreenBlockProps {
     title: string;
@@ -9,8 +9,42 @@ interface ScreenBlockProps {
     onRetry?: () => void;
 }
 
-const ScreenBlock = ({ title, message }: ScreenBlockProps) => {
-    const Icon = title === '404' ? FaMagnifyingGlass : FaCircleExclamation;
+const NotFoundScreen = ({ message, onBack }: Pick<ScreenBlockProps, 'message' | 'onBack'>) => (
+    <PageContentBlock>
+        <div className='relative flex min-h-[70vh] w-full items-center justify-center overflow-hidden'>
+            <div className='flex max-w-xl flex-col items-center gap-6 px-4 text-center'>
+                <h1 className='bg-gradient-to-b from-violet-200 to-violet-500/60 bg-clip-text text-9xl font-extrabold leading-none text-transparent [mask-image:linear-gradient(to_bottom,black_20%,transparent_80%)]'>
+                    404
+                </h1>
+                <p className='-mt-8 text-base text-slate-300'>{message}</p>
+                <div className='flex flex-wrap items-center justify-center gap-2'>
+                    <a
+                        href='/'
+                        className='inline-flex items-center gap-2 rounded-ui bg-violet-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-400'
+                    >
+                        <FaHouse className='h-4 w-4' aria-hidden='true' />
+                        Go Home
+                    </a>
+                    <button
+                        type='button'
+                        onClick={() => (onBack ? onBack() : window.history.back())}
+                        className='inline-flex cursor-pointer items-center gap-2 rounded-ui border border-violet-500/30 px-4 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-violet-500/10'
+                    >
+                        <FaCompass className='h-4 w-4' aria-hidden='true' />
+                        Go Back
+                    </button>
+                </div>
+            </div>
+        </div>
+    </PageContentBlock>
+);
+
+const ScreenBlock = ({ title, message, onBack }: ScreenBlockProps) => {
+    if (title === '404') {
+        return <NotFoundScreen message={message} onBack={onBack} />;
+    }
+
+    const Icon = FaCircleExclamation;
 
     return (
         <PageContentBlock>
@@ -49,9 +83,11 @@ interface NotFoundProps {
     onBack?: () => void;
 }
 
-const NotFound = ({ title = '404', message = 'The requested resource was not found.', onBack }: NotFoundProps) => (
-    <ScreenBlock title={title} message={message} onBack={onBack} />
-);
+const NotFound = ({
+    title = '404',
+    message = "The page you're looking for might have been moved or doesn't exist.",
+    onBack,
+}: NotFoundProps) => <ScreenBlock title={title} message={message} onBack={onBack} />;
 
 export { ServerError, NotFound };
 export default ScreenBlock;

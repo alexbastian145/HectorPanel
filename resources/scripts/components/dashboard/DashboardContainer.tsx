@@ -372,7 +372,7 @@ export default () => {
                                     />
                                 ))
                             ) : (
-                                <Card className='col-span-1 lg:col-span-2'>
+                                <Card className='col-span-1 lg:col-span-2 border-transparent! bg-transparent!'>
                                     <p className='flex justify-center text-center text-sm text-gray-400 py-10'>
                                         <EmojiSadIcon className='w-5 h-5 mr-1' /> {t('no-servers')}
                                     </p>
