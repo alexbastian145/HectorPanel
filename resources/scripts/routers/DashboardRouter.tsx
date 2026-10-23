@@ -25,6 +25,7 @@ import { resolveExtensionIcon } from '@/extensions/iconResolver';
 import PasskeysContainer from '@/components/dashboard/PasskeysContainer';
 import { useSubuserPreview } from '@/context/SubuserPreviewContext';
 import { motion } from 'framer-motion';
+import FloatingPathsBackground from '@/reviactyl/ui/FloatingPathsBackground';
 
 interface Props {
     route: any;
@@ -159,81 +160,85 @@ function DashboardRouter() {
                 <Maintenance />
             ) : (
                 <RouterContainer>
-                    <Navbar>
-                        <div className='lg:hidden'>
-                            <button
-                                onClick={() => setSidebarOpen(!isSidebarOpen)}
-                                className='text-gray-600 bg-gray-900 p-2 rounded-ui'
+                    <FloatingPathsBackground>
+                        <Navbar>
+                            <div className='lg:hidden'>
+                                <button
+                                    onClick={() => setSidebarOpen(!isSidebarOpen)}
+                                    className='text-gray-600 bg-gray-900 p-2 rounded-ui'
+                                >
+                                    {isSidebarOpen ? <XIcon className='w-6 h-6' /> : <MenuIcon className='w-6 h-6' />}
+                                </button>
+                            </div>
+                        </Navbar>
+                        <ContentContainer>
+                            {isSidebarOpen && (
+                                <div
+                                    onClick={() => setSidebarOpen(false)}
+                                    className='fixed inset-0 z-30 bg-gray-900/40 backdrop-blur-xs transition-all duration-300 ease-in-out lg:hidden'
+                                />
+                            )}
+                            <motion.div
+                                initial={{ opacity: 1 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ duration: 0.15, ease: 'easeIn' }}
                             >
-                                {isSidebarOpen ? <XIcon className='w-6 h-6' /> : <MenuIcon className='w-6 h-6' />}
-                            </button>
-                        </div>
-                    </Navbar>
-                    <ContentContainer>
-                        {isSidebarOpen && (
+                                <Sidebar isOpen={isSidebarOpen}>
+                                    <DashboardNavigation />
+                                </Sidebar>
+                            </motion.div>
                             <div
-                                onClick={() => setSidebarOpen(false)}
-                                className='fixed inset-0 z-30 bg-gray-900/40 backdrop-blur-xs transition-all duration-300 ease-in-out lg:hidden'
+                                className={`w-full flex-1 overflow-y-auto ${layoutType === 'modern' ? 'pb-24 lg:pb-0' : ''}`}
+                            >
+                                <Suspense fallback={<Spinner centered />}>
+                                    {useRoutes(
+                                        [
+                                            {
+                                                path: '',
+                                                element: (
+                                                    <>
+                                                        {!session && <ExtensionSlot name='dashboard:router:above' />}
+                                                        <Announcement />
+                                                        <MaintenanceAlert />
+                                                        <DashboardContainer />
+                                                        {!session && <ExtensionSlot name='dashboard:router:below' />}
+                                                    </>
+                                                ),
+                                            },
+                                            ...(!session ? routes.account : []).map(
+                                                ({ route, component: Component }) => ({
+                                                    path: `/account/${route}`.replace('//', '/'),
+                                                    element: (
+                                                        <>
+                                                            <Announcement placement='account' />
+                                                            <Component />
+                                                        </>
+                                                    ),
+                                                }),
+                                            ),
+                                            ...(!session
+                                                ? [
+                                                      {
+                                                          path: '/passkey/*',
+                                                          element: <PasskeysContainer />,
+                                                      },
+                                                  ]
+                                                : []),
+                                            ...(!session ? injectedRoutes : []),
+                                            { path: '*', element: <NotFound /> },
+                                        ],
+                                        location,
+                                    )}
+                                </Suspense>
+                            </div>
+                        </ContentContainer>
+                        {layoutType === 'modern' && (
+                            <MobileBottomBar
+                                sidebarOpen={isSidebarOpen}
+                                onShowSidebar={() => setSidebarOpen((open) => !open)}
                             />
                         )}
-                        <motion.div
-                            initial={{ opacity: 1 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ duration: 0.15, ease: 'easeIn' }}
-                        >
-                            <Sidebar isOpen={isSidebarOpen}>
-                                <DashboardNavigation />
-                            </Sidebar>
-                        </motion.div>
-                        <div
-                            className={`w-full flex-1 overflow-y-auto ${layoutType === 'modern' ? 'pb-24 lg:pb-0' : ''}`}
-                        >
-                            <Suspense fallback={<Spinner centered />}>
-                                {useRoutes(
-                                    [
-                                        {
-                                            path: '',
-                                            element: (
-                                                <>
-                                                    {!session && <ExtensionSlot name='dashboard:router:above' />}
-                                                    <Announcement />
-                                                    <MaintenanceAlert />
-                                                    <DashboardContainer />
-                                                    {!session && <ExtensionSlot name='dashboard:router:below' />}
-                                                </>
-                                            ),
-                                        },
-                                        ...(!session ? routes.account : []).map(({ route, component: Component }) => ({
-                                            path: `/account/${route}`.replace('//', '/'),
-                                            element: (
-                                                <>
-                                                    <Announcement placement='account' />
-                                                    <Component />
-                                                </>
-                                            ),
-                                        })),
-                                        ...(!session
-                                            ? [
-                                                  {
-                                                      path: '/passkey/*',
-                                                      element: <PasskeysContainer />,
-                                                  },
-                                              ]
-                                            : []),
-                                        ...(!session ? injectedRoutes : []),
-                                        { path: '*', element: <NotFound /> },
-                                    ],
-                                    location,
-                                )}
-                            </Suspense>
-                        </div>
-                    </ContentContainer>
-                    {layoutType === 'modern' && (
-                        <MobileBottomBar
-                            sidebarOpen={isSidebarOpen}
-                            onShowSidebar={() => setSidebarOpen((open) => !open)}
-                        />
-                    )}
+                    </FloatingPathsBackground>
                 </RouterContainer>
             )}
         </>
