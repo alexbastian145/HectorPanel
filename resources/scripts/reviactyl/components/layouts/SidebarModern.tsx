@@ -32,7 +32,7 @@ const NavbarContainer = ({ children, className = '' }: React.HTMLAttributes<HTML
 
 export const SideNavigation = ({ children, className = '' }: React.HTMLAttributes<HTMLDivElement>) => (
     <div
-        className={`-mt-1 flex flex-col gap-1 pb-4 [&_.label]:mx-2 [&_.label]:flex [&_.label]:items-center [&_.label]:px-3 [&_.label]:pt-2 [&_.label]:pb-1 [&_.label]:text-sm [&_.label]:font-semibold [&_.label]:text-gray-400 [&_a]:mx-2 [&_a]:flex [&_a]:items-center [&_a]:rounded-ui [&_a]:px-5 [&_a]:py-2 [&_a]:text-sm [&_a]:font-medium [&_a]:text-gray-200 [&_a:hover]:bg-gray-700/20 [&_a:focus]:bg-gray-700/20 [&_a:focus]:text-reviactyl [&_a.active]:bg-gray-700/20 [&_a.active]:text-reviactyl ${className}`}
+        className={`-mt-1 flex flex-col gap-1 pb-4 [&_.label]:mx-2 [&_.label]:flex [&_.label]:items-center [&_.label]:px-3 [&_.label]:pt-2 [&_.label]:pb-1 [&_.label]:text-sm [&_.label]:font-semibold [&_.label]:text-slate-400 [&_a]:mx-2 [&_a]:flex [&_a]:items-center [&_a]:rounded-ui [&_a]:px-5 [&_a]:py-2 [&_a]:text-sm [&_a]:font-medium [&_a]:text-slate-200 [&_a]:transition-colors [&_a:hover]:bg-violet-500/10 [&_a:focus]:bg-violet-500/10 [&_a:focus]:text-violet-300 [&_a.active]:bg-violet-500/15 [&_a.active]:text-violet-300 [&_a.active]:ring-1 [&_a.active]:ring-violet-500/20 ${className}`}
     >
         {children}
     </div>
@@ -63,7 +63,7 @@ export const SidebarModern = React.forwardRef<HTMLDivElement, SidebarProps>(({ c
     return (
         <div
             ref={ref}
-            className={`m-2 self-start flex-col rounded-ui border border-gray-800 bg-gray-900 text-white transition-[width] duration-300 ease-in-out ${
+            className={`m-2 self-start flex-col rounded-ui border border-violet-500/20 bg-[radial-gradient(circle_at_top_left,_rgba(168,85,247,0.16),_transparent_45%),radial-gradient(circle_at_bottom_left,_rgba(99,102,241,0.10),_transparent_45%),linear-gradient(180deg,_#070b1a_0%,_#040914_100%)] text-slate-200 transition-[width] duration-300 ease-in-out ${
                 collapsed ? 'w-56.25 lg:w-16' : 'w-56.25 2xl:w-64'
             } lg:fixed lg:top-(--subuser-preview-offset,0px) lg:left-0 lg:z-40 lg:flex lg:h-[calc(100dvh-15px-var(--subuser-preview-offset,0px))] lg:overflow-y-auto ${
                 isOpen
@@ -72,7 +72,7 @@ export const SidebarModern = React.forwardRef<HTMLDivElement, SidebarProps>(({ c
             }`}
         >
             <SpinnerOverlay visible={isLoggingOut} />
-            <div className='sticky top-0 z-10 border-b border-gray-800 bg-gray-900'>
+            <div className='sticky top-0 z-10 border-b border-violet-500/20 bg-[#070b1a]/80 backdrop-blur'>
                 <div
                     className={`flex items-center px-3 py-3 ${collapsed ? 'justify-between lg:justify-center lg:px-0' : 'justify-between'}`}
                 >
@@ -84,7 +84,7 @@ export const SidebarModern = React.forwardRef<HTMLDivElement, SidebarProps>(({ c
                                     alt={brandName}
                                     className='size-9 shrink-0 rounded-xl'
                                 />
-                                <span className='truncate text-lg font-semibold text-gray-50'>{brandName}</span>
+                                <span className='truncate text-lg font-semibold text-slate-50'>{brandName}</span>
                             </Link>
                             <button
                                 type='button'
@@ -97,7 +97,7 @@ export const SidebarModern = React.forwardRef<HTMLDivElement, SidebarProps>(({ c
                                     alt={brandName}
                                     className='size-9 rounded-xl transition-opacity duration-200 group-hover/brand:opacity-0'
                                 />
-                                <span className='absolute inset-0 flex items-center justify-center rounded-xl bg-gray-700/40 text-gray-200 opacity-0 transition-opacity duration-200 group-hover/brand:opacity-100'>
+                                <span className='absolute inset-0 flex items-center justify-center rounded-xl bg-violet-500/20 text-violet-200 opacity-0 transition-opacity duration-200 group-hover/brand:opacity-100'>
                                     <LuPanelLeft className='size-5' />
                                 </span>
                             </button>
@@ -110,13 +110,13 @@ export const SidebarModern = React.forwardRef<HTMLDivElement, SidebarProps>(({ c
                                     alt={brandName}
                                     className='size-9 shrink-0 rounded-xl'
                                 />
-                                <span className='truncate text-lg font-semibold text-gray-50'>{brandName}</span>
+                                <span className='truncate text-lg font-semibold text-slate-50'>{brandName}</span>
                             </Link>
                             <button
                                 type='button'
                                 onClick={() => setCollapsed(true)}
                                 aria-label='Collapse sidebar'
-                                className='hidden size-8 shrink-0 cursor-pointer items-center justify-center rounded-ui text-gray-400 transition-colors hover:bg-gray-700/30 hover:text-gray-100 lg:flex'
+                                className='hidden size-8 shrink-0 cursor-pointer items-center justify-center rounded-ui text-slate-400 transition-colors hover:bg-violet-500/15 hover:text-violet-200 lg:flex'
                             >
                                 <LuPanelLeft className='size-5' />
                             </button>
@@ -140,7 +140,7 @@ export const SidebarModern = React.forwardRef<HTMLDivElement, SidebarProps>(({ c
             </div>
 
             <div
-                className={`sticky bottom-0 z-10 border-t border-gray-800 bg-gray-900 p-3 ${collapsed ? 'lg:px-0' : ''}`}
+                className={`sticky bottom-0 z-10 border-t border-violet-500/20 bg-[#040914]/80 backdrop-blur p-3 ${collapsed ? 'lg:px-0' : ''}`}
             >
                 {session ? (
                     <div className={`flex min-w-0 items-center gap-3 ${collapsed ? 'lg:justify-center' : ''}`}>
@@ -159,7 +159,7 @@ export const SidebarModern = React.forwardRef<HTMLDivElement, SidebarProps>(({ c
                         </Link>
                         <div className={`flex flex-col ${collapsed ? 'lg:hidden' : ''}`}>
                             <div className='flex items-center gap-x-1'>
-                                <span className='text-xs tracking-widest uppercase text-gray-500'>
+                                <span className='text-xs tracking-widest uppercase text-slate-500'>
                                     {rootAdmin ? t('overview.administrator') : `${name} ${t('overview.user')}`}
                                 </span>
                                 {adminAccess && (
@@ -170,7 +170,7 @@ export const SidebarModern = React.forwardRef<HTMLDivElement, SidebarProps>(({ c
                                 )}
                             </div>
                             <Link to='/account'>
-                                <span className='text-sm font-semibold text-gray-400'>
+                                <span className='text-sm font-semibold text-slate-300'>
                                     {nameFirst} {nameLast}
                                 </span>
                             </Link>
