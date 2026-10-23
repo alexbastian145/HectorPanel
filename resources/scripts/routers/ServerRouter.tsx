@@ -270,7 +270,7 @@ export default function ServerRouter() {
                         error ? (
                             <ServerError message={error} />
                         ) : (
-                            <Spinner size='large' centered />
+                            <Spinner size='large' centered fullScreen />
                         )
                     ) : (
                         <>

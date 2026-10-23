@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 import ErrorBoundary from '@/reviactyl/elements/ErrorBoundary';
-import { MorphingInfinity } from '@/components/loading-ui/morphing-infinity';
+import { InfinityLoop } from '@/components/loading-ui/infinity-loop';
 
 export type SpinnerSize = 'small' | 'base' | 'large';
 
@@ -8,6 +8,8 @@ interface Props {
     size?: SpinnerSize;
     centered?: boolean;
     isBlue?: boolean;
+    /** Cover the whole viewport with the auth-themed backdrop (use only for page-level loading). */
+    fullScreen?: boolean;
     className?: string;
     children?: React.ReactNode;
 }
@@ -32,20 +34,30 @@ const SpinnerElement = ({ size = 'base', isBlue, className }: Pick<Props, 'size'
     />
 );
 
-const SpinnerFunc = ({ centered, className, ...props }: Props) => {
-    if (centered && props.size === 'large') {
-        return (
-            <main className='relative flex min-h-screen items-center justify-center overflow-hidden bg-[#040914] text-slate-200'>
-                <div className='absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(168,85,247,0.18),_transparent_38%),radial-gradient(circle_at_bottom_left,_rgba(99,102,241,0.12),_transparent_40%),linear-gradient(180deg,_rgba(7,11,26,0.96),_rgba(3,6,16,0.98))]' />
-                <div className='absolute inset-0 bg-[linear-gradient(90deg,rgba(4,9,20,0.0),rgba(4,9,20,0.15),rgba(4,9,20,0.9))]' />
+const LoadingIndicator = () => (
+    <div className='relative z-10 flex flex-col items-center justify-center gap-4'>
+        <InfinityLoop className='size-24 text-violet-300 drop-shadow-[0_0_12px_rgba(168,85,247,0.6)]' />
+        <p className='text-[0.7rem] font-medium uppercase tracking-[0.38em] text-violet-200/80'>Loading</p>
+    </div>
+);
 
-                <div className='relative z-10 flex flex-col items-center justify-center gap-5'>
-                    <MorphingInfinity className='h-28 w-28 text-violet-300' size={112} />
-                    <div className='text-center'>
-                        <p className='text-[0.7rem] font-medium uppercase tracking-[0.38em] text-violet-200/80'>Loading</p>
-                    </div>
-                </div>
-            </main>
+const SpinnerFunc = ({ centered, className, fullScreen, ...props }: Props) => {
+    if (centered && props.size === 'large') {
+        if (fullScreen) {
+            return (
+                <main className='relative flex min-h-screen items-center justify-center overflow-hidden bg-[#040914] text-slate-200'>
+                    <div className='absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(168,85,247,0.18),_transparent_38%),radial-gradient(circle_at_bottom_left,_rgba(99,102,241,0.12),_transparent_40%),linear-gradient(180deg,_rgba(7,11,26,0.96),_rgba(3,6,16,0.98))]' />
+                    <div className='absolute inset-0 bg-[linear-gradient(90deg,rgba(4,9,20,0.0),rgba(4,9,20,0.15),rgba(4,9,20,0.9))]' />
+                    <LoadingIndicator />
+                </main>
+            );
+        }
+
+        // Inline: no backdrop, the page background already provides the theme.
+        return (
+            <div className='flex min-h-[60vh] w-full items-center justify-center'>
+                <LoadingIndicator />
+            </div>
         );
     }
 

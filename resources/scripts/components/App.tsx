@@ -189,7 +189,7 @@ function App() {
                                     <Route
                                         path='/auth/*'
                                         element={
-                                            <Spinner.Suspense>
+                                            <Spinner.Suspense fullScreen>
                                                 <AuthenticationRouter />
                                             </Spinner.Suspense>
                                         }
@@ -198,7 +198,7 @@ function App() {
                                         path='/server/:id/*'
                                         element={
                                             <AuthenticatedRoute>
-                                                <Spinner.Suspense>
+                                                <Spinner.Suspense fullScreen>
                                                     <ServerContext.Provider>
                                                         <ServerRouter />
                                                     </ServerContext.Provider>
@@ -209,7 +209,7 @@ function App() {
                                     <Route
                                         path='/status/:id/*'
                                         element={
-                                            <Spinner.Suspense>
+                                            <Spinner.Suspense fullScreen>
                                                 <PublicServerStatus />
                                             </Spinner.Suspense>
                                         }
@@ -218,7 +218,7 @@ function App() {
                                         path='/*'
                                         element={
                                             <AuthenticatedRoute>
-                                                <Spinner.Suspense>
+                                                <Spinner.Suspense fullScreen>
                                                     <DashboardRouter />
                                                 </Spinner.Suspense>
                                             </AuthenticatedRoute>
