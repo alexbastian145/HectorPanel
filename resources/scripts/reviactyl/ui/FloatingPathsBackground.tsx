@@ -62,7 +62,7 @@ const PathsLayer = ({ position }: { position: number }) => {
 };
 
 /**
- * Animated "floating paths" backdrop for the dashboard, styled to match the login page (violet paths, two
+ * Animated "floating paths" backdrop for the dashboard, styled to match the login page (navy and violet backdrop, violet paths, two
  * mirrored sets).
  *
  * The paths are drawn on a fixed, non-interactive layer that covers the viewport, and the children are
@@ -71,7 +71,9 @@ const PathsLayer = ({ position }: { position: number }) => {
 export const FloatingPathsBackground = ({ className, children }: FloatingPathsBackgroundProps) => {
     return (
         <div className={classNames('relative isolate w-full', className)}>
-            <div aria-hidden className='pointer-events-none fixed inset-0 z-0 overflow-hidden'>
+            <div aria-hidden className='pointer-events-none fixed inset-0 z-0 overflow-hidden bg-[#040914]'>
+                {/* Same navy + violet backdrop as the login page. */}
+                <div className='absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(168,85,247,0.18),_transparent_38%),radial-gradient(circle_at_bottom_left,_rgba(99,102,241,0.12),_transparent_40%),radial-gradient(circle_at_top,_rgba(168,85,247,0.09),_transparent_28%),linear-gradient(180deg,_#050b16_0%,_#040914_100%)]' />
                 <PathsLayer position={1} />
                 <PathsLayer position={-1} />
             </div>
