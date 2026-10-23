@@ -7,9 +7,10 @@ import { ExternalLinkIcon } from '@heroicons/react/solid';
 import { useTranslation } from 'react-i18next';
 import http from '@/api/http';
 import SpinnerOverlay from '@/reviactyl/elements/SpinnerOverlay';
-import Logo from '@/reviactyl/ui/Logo';
 import Tooltip from '@/reviactyl/elements/tooltip/Tooltip';
 import { FaArrowRightToBracket, FaEye } from 'react-icons/fa6';
+import { LuPanelLeft } from 'react-icons/lu';
+import { useSidebarCollapsed } from '@/reviactyl/ui/useSidebarCollapsed';
 import { useSubuserPreview } from '@/context/SubuserPreviewContext';
 
 interface SidebarProps {
@@ -40,6 +41,9 @@ export const SideNavigation = ({ children, className = '' }: React.HTMLAttribute
 export const SidebarModern = React.forwardRef<HTMLDivElement, SidebarProps>(({ children, isOpen = false }, ref) => {
     const { t } = useTranslation('dashboard/account');
     const { t: tUsers } = useTranslation('server/users');
+    const { t: tAuth } = useTranslation('auth');
+    const [collapsed, setCollapsed] = useSidebarCollapsed();
+    const brandName = tAuth('brand.name');
     const nameFirst = useStoreState((state) => state.user.data?.name_first);
     const nameLast = useStoreState((state) => state.user.data?.name_last);
     const rootAdmin = useStoreState((state) => state.user.data!.rootAdmin);
@@ -59,7 +63,9 @@ export const SidebarModern = React.forwardRef<HTMLDivElement, SidebarProps>(({ c
     return (
         <div
             ref={ref}
-            className={`m-2 w-56.25 self-start flex-col rounded-ui border border-gray-800 bg-gray-900 text-white 2xl:w-64 lg:fixed lg:top-(--subuser-preview-offset,0px) lg:left-0 lg:z-40 lg:flex lg:h-[calc(100dvh-15px-var(--subuser-preview-offset,0px))] lg:overflow-y-auto ${
+            className={`m-2 self-start flex-col rounded-ui border border-gray-800 bg-gray-900 text-white transition-[width] duration-300 ease-in-out ${
+                collapsed ? 'w-56.25 lg:w-16' : 'w-56.25 2xl:w-64'
+            } lg:fixed lg:top-(--subuser-preview-offset,0px) lg:left-0 lg:z-40 lg:flex lg:h-[calc(100dvh-15px-var(--subuser-preview-offset,0px))] lg:overflow-y-auto ${
                 isOpen
                     ? 'fixed top-[calc(1rem+var(--subuser-preview-offset,0px))] left-0 z-40 flex h-[calc(100dvh-6rem-var(--subuser-preview-offset,0px))] overflow-y-auto'
                     : 'hidden'
@@ -67,32 +73,91 @@ export const SidebarModern = React.forwardRef<HTMLDivElement, SidebarProps>(({ c
         >
             <SpinnerOverlay visible={isLoggingOut} />
             <div className='sticky top-0 z-10 border-b border-gray-800 bg-gray-900'>
-                <div className='py-3 px-3'>
-                    <Logo nostyles />
+                <div
+                    className={`flex items-center px-3 py-3 ${collapsed ? 'justify-between lg:justify-center lg:px-0' : 'justify-between'}`}
+                >
+                    {collapsed ? (
+                        <>
+                            <Link to='/' className='flex items-center gap-3 lg:hidden'>
+                                <img
+                                    src='/reviactyl/hector-cloud-logo.png'
+                                    alt={brandName}
+                                    className='size-9 shrink-0 rounded-xl'
+                                />
+                                <span className='truncate text-lg font-semibold text-gray-50'>{brandName}</span>
+                            </Link>
+                            <button
+                                type='button'
+                                onClick={() => setCollapsed(false)}
+                                aria-label='Expand sidebar'
+                                className='group/brand relative hidden size-9 shrink-0 cursor-pointer items-center justify-center rounded-xl lg:flex'
+                            >
+                                <img
+                                    src='/reviactyl/hector-cloud-logo.png'
+                                    alt={brandName}
+                                    className='size-9 rounded-xl transition-opacity duration-200 group-hover/brand:opacity-0'
+                                />
+                                <span className='absolute inset-0 flex items-center justify-center rounded-xl bg-gray-700/40 text-gray-200 opacity-0 transition-opacity duration-200 group-hover/brand:opacity-100'>
+                                    <LuPanelLeft className='size-5' />
+                                </span>
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <Link to='/' className='flex min-w-0 items-center gap-3'>
+                                <img
+                                    src='/reviactyl/hector-cloud-logo.png'
+                                    alt={brandName}
+                                    className='size-9 shrink-0 rounded-xl'
+                                />
+                                <span className='truncate text-lg font-semibold text-gray-50'>{brandName}</span>
+                            </Link>
+                            <button
+                                type='button'
+                                onClick={() => setCollapsed(true)}
+                                aria-label='Collapse sidebar'
+                                className='hidden size-8 shrink-0 cursor-pointer items-center justify-center rounded-ui text-gray-400 transition-colors hover:bg-gray-700/30 hover:text-gray-100 lg:flex'
+                            >
+                                <LuPanelLeft className='size-5' />
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
 
             <div className='flex flex-1 flex-col overflow-y-auto'>
-                {children ? <SideNavigation>{children}</SideNavigation> : null}
+                {children ? (
+                    <SideNavigation
+                        className={
+                            collapsed
+                                ? 'lg:[&_.label]:hidden lg:[&_a]:justify-center lg:[&_a]:px-0! lg:[&_a>span]:justify-center lg:[&_a>span]:text-[0px]! lg:[&_svg]:mr-0! lg:[&_svg]:size-5!'
+                                : ''
+                        }
+                    >
+                        {children}
+                    </SideNavigation>
+                ) : null}
             </div>
 
-            <div className='sticky bottom-0 z-10 border-t border-gray-800 bg-gray-900 p-3'>
+            <div
+                className={`sticky bottom-0 z-10 border-t border-gray-800 bg-gray-900 p-3 ${collapsed ? 'lg:px-0' : ''}`}
+            >
                 {session ? (
-                    <div className='flex min-w-0 items-center gap-3'>
+                    <div className={`flex min-w-0 items-center gap-3 ${collapsed ? 'lg:justify-center' : ''}`}>
                         <span className='flex rounded-full items-center justify-center bg-amber-900/50 border-amber-800/50 h-10 w-10'>
                             <FaEye className='h-5 w-5 shrink-0 text-amber-400' />
                         </span>
-                        <div className='min-w-0'>
+                        <div className={`min-w-0 ${collapsed ? 'lg:hidden' : ''}`}>
                             <p className='text-xs font-semibold text-gray-100'>{tUsers('preview.title')}</p>
                             <p className='truncate text-xs text-gray-400'>{session.subuserEmail}</p>
                         </div>
                     </div>
                 ) : (
-                    <div className='flex items-center gap-3'>
+                    <div className={`flex items-center gap-3 ${collapsed ? 'lg:justify-center' : ''}`}>
                         <Link to='/account'>
                             <Avatar className='w-10' />
                         </Link>
-                        <div className='flex flex-col'>
+                        <div className={`flex flex-col ${collapsed ? 'lg:hidden' : ''}`}>
                             <div className='flex items-center gap-x-1'>
                                 <span className='text-xs tracking-widest uppercase text-gray-500'>
                                     {rootAdmin ? t('overview.administrator') : `${name} ${t('overview.user')}`}
@@ -111,7 +176,7 @@ export const SidebarModern = React.forwardRef<HTMLDivElement, SidebarProps>(({ c
                             </Link>
                         </div>
                         {sidebarLogout && (
-                            <div onClick={onLogout}>
+                            <div onClick={onLogout} className={collapsed ? 'lg:hidden' : ''}>
                                 <Tooltip content={t('overview.logout')}>
                                     <FaArrowRightToBracket className='h-10 text-gray-600 hover:text-danger/80 cursor-pointer' />
                                 </Tooltip>
